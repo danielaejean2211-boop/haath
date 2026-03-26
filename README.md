@@ -6,6 +6,116 @@ The central idea: **the model does not “see every tool at once.”** It sees t
 
 ---
 
+## Diagrams
+
+### Architecture at a glance
+
+How the control plane, model gateway, FSM, and CLI broker connect:
+
+```mermaid
+flowchart TB
+  subgraph Control["Agent Gateway"]
+    API[HTTP API]
+    CFG[Policies and config]
+  end
+
+  subgraph ModelPath["LLM path"]
+    W[(Waterfall LLM gateway)]
+    LLM[LLM]
+  end
+
+  subgraph Runtime["Workflow runtime"]
+    FSM[["ASMP server: FSM / state frames"]]
+  end
+
+  subgraph Exec["Execution surface"]
+    CLR[clrun]
+    PTY[Local shell and TUIs]
+    DCLI[Dynamic CLI per state]
+  end
+
+  Tools[External tools and APIs]
+
+  API --> CFG
+  CFG --> W
+  W --> LLM
+  LLM --> API
+  API --> FSM
+  FSM --> DCLI
+  CLR --> DCLI
+  CLR --> PTY
+  PTY --> Tools
+  FSM --> Tools
+```
+
+### Progressive disclosure vs a flat tool menu
+
+Haath follows the ASMP idea: **only the current state** is fully expanded in context—not every capability at once.
+
+```mermaid
+flowchart LR
+  subgraph Flat["Flat tool menu"]
+    direction TB
+    T1[Tool A]
+    T2[Tool B]
+    T3[Tool …]
+    TN[Tool N]
+  end
+
+  subgraph State["State frame — current step only"]
+    direction TB
+    CUR[Current state plus hint]
+    NEXT[Valid next_states]
+    SKILL[Optional active_skill]
+    STG[Stage tools and resources]
+  end
+
+  Flat -.->|high token load| X1[Agent guesses next step]
+  State -->|minimal context| X2[Server constrains valid moves]
+```
+
+### Execution loop
+
+One turn through sensing the frame, acting, and advancing the workflow:
+
+```mermaid
+sequenceDiagram
+  participant G as Agent Gateway
+  participant W as Waterfall
+  participant L as LLM
+  participant A as ASMP FSM
+  participant C as clrun
+
+  G->>A: GET frame / run state
+  A-->>G: State frame — hint, next_states, tools
+  G->>W: Completion request
+  W-->>L: Routed, metered call
+  L-->>G: Transition or tool choice
+  G->>A: POST transition / invoke tool
+  A-->>G: Updated frame
+  G->>C: clrun scp or shell step
+  C-->>G: YAML output plus hints
+```
+
+### Trainable, modular workflows
+
+The FSM can **change over time**; definitions can be **exported and merged** so knowledge stays portable.
+
+```mermaid
+flowchart TB
+  S1((Gather context))
+  S2((Act via CLI))
+  S3((Verify))
+  S1 --> S2 --> S3
+  S3 --> MUT[Refine FSM: add, remove, or edit states]
+  MUT --> S1
+  S3 --> EXP[Export workflow]
+  EXP --> PKG[Shareable FSM package]
+  PKG --> MERGE[Merge into other agents or environments]
+```
+
+---
+
 ## How it fits together
 
 | Layer | Role |
