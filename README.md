@@ -1,6 +1,6 @@
 # Haath
 
-**Haath** is an autonomous LLM agent that **executes inside a Finite State Machine**. It uses [**ASMP**](https://github.com/cybertheory/asmp) (**Agent State Machine Protocol**; the same codebase documents the wire protocol as **SCP**, Structured Command Protocol) to define where the agent is in a workflow, what it may do next, and what context matters *right now*. It uses [**clrun**](https://github.com/cybertheory/clrun) to drive those workflows from the terminal: the same agent-native CLI can attach to **remote** ASMP servers or **local** in-process FSMs, run shell commands, and follow the **dynamic CLI** surface that ASMP exposes per state (`GET /runs/{run_id}/cli`).
+**Haath** is an autonomous LLM agent that **executes inside a Finite State Machine**. It uses [**ASMP**](https://github.com/cybertheory/asmp) (**Agent State Machine Protocol**) to define where the agent is in a workflow, what it may do next, and what context matters *right now*. It uses [**clrun**](https://github.com/cybertheory/clrun) to drive those workflows from the terminal: the same agent-native CLI can attach to **remote** ASMP servers or **local** in-process FSMs, run shell commands, and follow the **dynamic CLI** surface that ASMP exposes per state (`GET /runs/{run_id}/cli`).
 
 The central idea: **the model does not “see every tool at once.”** It sees the current **state frame**—hints, valid transitions, optional **active skill**, and stage-scoped tools/resources—then acts through **CLIs and HTTP** that are tied to that state. **Haath can add, remove, and refine states** as new context appears, so behavior improves over time. Workflows and FSM definitions can be **exported, downloaded, and merged**, so learned structure stays **modular** and shareable across agents and deployments.
 
@@ -93,7 +93,7 @@ sequenceDiagram
   L-->>G: Transition or tool choice
   G->>A: POST transition / invoke tool
   A-->>G: Updated frame
-  G->>C: clrun scp or shell step
+  G->>C: clrun ASMP CLI or shell step
   C-->>G: YAML output plus hints
 ```
 
@@ -122,7 +122,7 @@ flowchart TB
 |--------|------|
 | **LLM** | Chooses transitions and invocations allowed by the current state; reads compressed per-state context. |
 | [**ASMP**](https://github.com/cybertheory/asmp) | Authoritative FSM: state frames, progressive disclosure, optional NDJSON streams, stage tools/resources, optional Open Agent Skill hooks. |
-| [**clrun**](https://github.com/cybertheory/clrun) | PTY-backed commands, TUI navigation, structured YAML responses with hints—and `clrun scp <url>` to drive ASMP-backed flows as an interactive CLI. |
+| [**clrun**](https://github.com/cybertheory/clrun) | PTY-backed commands, TUI navigation, structured YAML responses with hints—and dynamic **ASMP** remote-CLI mode to drive ASMP-backed flows interactively. |
 | **Haath** | Orchestrates learning and mutation of the FSM, connects gateways and providers, and keeps operational and financial boundaries explicit. |
 
 ---
@@ -151,11 +151,25 @@ flowchart TB
 
 A **control plane** for connecting to and **configuring** the agent over an API: identities, policies, which workflows are active, and how the model is called. It is the place to **wire LLM configuration through Waterfall** so calls are **metered, attributed, and automatable** from a spend and operations perspective—not a silent line item on a vendor bill.
 
+**Implementation in this repo:** the [`gateway/`](gateway/) app is a Next.js **dashboard + API**. It listens on port **28657** by default (OpenClaw’s gateway commonly uses **18789**, so the ports do not collide). Persistent settings are stored at **`~/.haath/haath.json`**. Run locally:
+
+```bash
+cd gateway && npm install && npm test && npm run dev
+```
+
+Tests use Vitest; set `HAATH_DATA_DIR` to a temp directory if you need to isolate the config file (the suite sets this automatically).
+
+Then open `http://localhost:28657` for the UI.
+
+**REST (configuration):** `GET` / `PUT` / `PATCH` [`/api/v1/config`](gateway/src/app/api/v1/config/route.ts); `GET` / `PATCH` [`/api/v1/config/agent`](gateway/src/app/api/v1/config/agent/route.ts) and [`/api/v1/config/waterfall`](gateway/src/app/api/v1/config/waterfall/route.ts); [`/api/v1/meta`](gateway/src/app/api/v1/meta/route.ts) (ASMP base URL and API index); [`/api/v1/health`](gateway/src/app/api/v1/health/route.ts). Legacy **`GET` / `PUT` `/api/haath`** still matches the same [config schema](gateway/src/lib/haath-store.ts).
+
+**ASMP on the same port:** the gateway mounts an [ASMP TypeScript SDK](https://github.com/cybertheory/asmp/tree/main/sdks/typescript) workflow at **`/asmp`** ([`gateway-asmp.ts`](gateway/src/lib/gateway-asmp.ts)) so agents can attach **clrun** in dynamic ASMP remote-CLI mode using that URL (e.g. `http://localhost:28657/asmp` or your public origin). See the [clrun](https://github.com/cybertheory/clrun) README for the exact invocation. The UI uses Tailwind and **shadcn-style** primitives under `gateway/src/components/ui/`.
+
 ### The FSM (via [ASMP](https://github.com/cybertheory/asmp))
 
 The **workflow server** the agent uses to execute work. The FSM acts as a **structured agentic scratchpad**: each **state** holds the knowledge and affordances that matter for that step—**valid next actions**, optional tools/resources, and natural-language **hints** that bridge into the LLM.
 
-- Actions are exposed in ways agents can drive reliably—including **CLI-shaped** flows via ASMP’s dynamic CLI and clrun’s `scp` mode.
+- Actions are exposed in ways agents can drive reliably—including **CLI-shaped** flows via ASMP’s dynamic CLI and clrun’s ASMP integration.
 - The agent can **dynamically modify** the FSM on the ASMP server as new requirements appear (new branches, states, or refinements), which is what makes Haath **trainable** in the structural sense—not only weight updates, but **workflow evolution**.
 - **Pre-shipped workflows** encode important skills: web search, password management, browser automation, **Waterfall / LLM gateway** observability, and more—so new deployments are useful before custom training.
 
@@ -168,7 +182,7 @@ The **agentic CLI** the agent uses to **run commands**, survive interactive inst
 ## Related projects
 
 - [**cybertheory/asmp**](https://github.com/cybertheory/asmp) — Protocol, spec, Python and TypeScript SDKs, examples, and skills.
-- [**cybertheory/clrun**](https://github.com/cybertheory/clrun) — Interactive CLI for agents; SCP/ASMP dynamic CLI client.
+- [**cybertheory/clrun**](https://github.com/cybertheory/clrun) — Interactive CLI for agents; dynamic ASMP remote-CLI client.
 - [**waterfall.finance**](https://waterfall.finance) — AI usage, spend tracking, and gateway products for payable, observable LLM access.
 
 ---
